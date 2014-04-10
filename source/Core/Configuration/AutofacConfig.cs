@@ -5,27 +5,27 @@
 using Autofac;
 using Autofac.Integration.WebApi;
 using System;
-using System.Web.Http.Dependencies;
+using DotNetDoodle.Owin.Dependencies.Autofac;
 using Thinktecture.IdentityManager.Core;
 
 namespace Thinktecture.IdentityManager
 {
-    class AutofacConfig
+    internal class AutofacConfig
     {
-        public static IDependencyResolver Configure(IdentityManagerConfiguration config)
+        public static IContainer Configure(IdentityManagerConfiguration config)
         {
             if (config == null) throw new ArgumentNullException("config");
 
-            var builder = new ContainerBuilder();
-            builder
-                .Register(ctx => config.UserManagerFactory())
+            ContainerBuilder builder = new ContainerBuilder();
+
+            builder.RegisterApiControllers(typeof(AutofacConfig).Assembly);
+            builder.RegisterOwinApplicationContainer();
+
+            builder.Register(ctx => config.UserManagerFactory())
                 .As<IUserManager>()
-                .InstancePerApiRequest();
-            builder
-                .RegisterApiControllers(typeof(AutofacConfig).Assembly);
-            
-            var container = builder.Build();
-            return new AutofacWebApiDependencyResolver(container);
+                .InstancePerLifetimeScope();
+
+            return builder.Build();
         }
     }
 }

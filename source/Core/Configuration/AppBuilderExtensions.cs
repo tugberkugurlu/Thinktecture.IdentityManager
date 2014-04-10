@@ -5,6 +5,9 @@
 
 using System;
 using System.Linq;
+using System.Web.Http;
+using Autofac;
+using DotNetDoodle.Owin;
 using Thinktecture.IdentityManager;
 using Microsoft.Owin.Extensions;
 using Microsoft.Owin;
@@ -19,7 +22,12 @@ namespace Owin
         {
             if (app == null) throw new ArgumentNullException("app");
             if (config == null) throw new ArgumentNullException("config");
+
             config.Validate();
+
+            // Register the container as early as possible
+            IContainer container = AutofacConfig.Configure(config);
+            app.UseAutofacContainer(container);
 
             app.Use(async (ctx, next) =>
             {
@@ -35,16 +43,21 @@ namespace Owin
                 RequestPath = new PathString("/assets"),
                 FileSystem = new EmbeddedResourceFileSystem(typeof(AppBuilderExtensions).Assembly, "Thinktecture.IdentityManager.Core.Assets")
             });
+
             app.UseFileServer(new FileServerOptions
             {
                 RequestPath = new PathString("/assets/libs/fonts"),
                 FileSystem = new EmbeddedResourceFileSystem(typeof(AppBuilderExtensions).Assembly, "Thinktecture.IdentityManager.Core.Assets.Content.fonts")
             });
+
             app.UseStageMarker(PipelineStage.MapHandler);
 
-            //app.UseJsonWebToken();
-            var resolver = AutofacConfig.Configure(config);
-            WebApiConfig.Configure(app, resolver, config);
+            // app.UseJsonWebToken();
+            
+            // Configure Web API and make it use the per request container of OWIN.
+            HttpConfiguration httpConfiguration = new HttpConfiguration();
+            WebApiConfig.Configure(httpConfiguration);
+            app.UseWebApiWithContainer(httpConfiguration);
         }
     }
 }

@@ -2,38 +2,30 @@
  * Copyright (c) Dominick Baier, Brock Allen.  All rights reserved.
  * see license
  */
-using Owin;
 using System;
 using System.IO;
 using System.Web.Http;
-using System.Web.Http.Dependencies;
 using System.Web.Http.ExceptionHandling;
 
 namespace Thinktecture.IdentityManager
 {
     class WebApiConfig
     {
-        public static void Configure(IAppBuilder app, IDependencyResolver resolver, IdentityManagerConfiguration config)
+        public static void Configure(HttpConfiguration httpConfiguration)
         {
-            if (app == null) throw new ArgumentNullException("app");
-            if (resolver == null) throw new ArgumentNullException("resolver");
-            if (config == null) throw new ArgumentNullException("config");
+            if (httpConfiguration == null) throw new ArgumentNullException("httpConfiguration");
 
-            var apiConfig = new HttpConfiguration();
-            apiConfig.MapHttpAttributeRoutes();
-            apiConfig.DependencyResolver = resolver;
+            httpConfiguration.MapHttpAttributeRoutes();
 
-            apiConfig.SuppressDefaultHostAuthentication();
-            apiConfig.Filters.Add(new HostAuthenticationAttribute("Bearer"));
+            httpConfiguration.SuppressDefaultHostAuthentication();
+            httpConfiguration.Filters.Add(new HostAuthenticationAttribute("Bearer"));
             //apiConfig.Filters.Add(new AuthorizeAttribute(){Roles=config.AdminRoleName});
 
-            apiConfig.Formatters.Remove(apiConfig.Formatters.XmlFormatter);
-            apiConfig.Formatters.JsonFormatter.SerializerSettings.ContractResolver =
+            httpConfiguration.Formatters.Remove(httpConfiguration.Formatters.XmlFormatter);
+            httpConfiguration.Formatters.JsonFormatter.SerializerSettings.ContractResolver =
                 new Newtonsoft.Json.Serialization.CamelCasePropertyNamesContractResolver();
 
             //apiConfig.Services.Add(typeof(IExceptionLogger), new UserAdminExceptionLogger());
-
-            app.UseWebApi(apiConfig);
         }
 
         public class UserAdminExceptionLogger : ExceptionLogger
